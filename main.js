@@ -1,88 +1,109 @@
-const container = document.querySelector('.container');
-var inputValue = document.querySelector('.input');
-const add = document.querySelector('.add');
+const clear = document.querySelector(".clear");
+const  dateElement = document.getElementById("date");
+const list = document.getElementById("list");
+var input = document.getElementById("input");
 
-if(window.localStorage.getItem("todos") == undefined){
-     var todos = [];
-     window.localStorage.setItem("todos", JSON.stringify(todos));
+
+const CHECK ="fa-check-circle";
+const UNCHECK="fa-circle-thin";
+const LINE_THROUGH = "lineThrough";
+
+let LIST
+,id;
+// get item from local storage
+
+let data =localStorage.getItem("toDo");
+if(data){
+    LIST=JSON.parse(data);
+    id=LIST.length;//set the id to the last one in the list
+    loadtodo(LIST);//load the list to the user interface
+}
+else{
+    LIST=[];
+    id=0;
+}
+function loadtodo(array){
+    array.forEach(function(item){
+        addToDo(item.name,item.id,item.done,item.trash);
+    });
 }
 
-var todosEX = window.localStorage.getItem("todos");
-var todos = JSON.parse(todosEX);
 
 
-class item{
-	constructor(name){
-		this.createItem(name);
-	}
-    createItem(name){
-    	var itemBox = document.createElement('div');
-        itemBox.classList.add('item');
+const options={weekday:"long",month:"short",day:"numeric"};
+const today=new Date();
+dateElement.innerHTML =today.toLocaleDateString("en-US",options);
 
-    	var input = document.createElement('input');
-    	input.type = "text";
-    	input.disabled = true;
-    	input.value = name;
-    	input.classList.add('item_input');
 
-    	var edit = document.createElement('button');
-    	edit.classList.add('edit');
-    	edit.innerHTML = "EDIT";
-    	edit.addEventListener('click', () => this.edit(input, name));
-
-    	var remove = document.createElement('button');
-    	remove.classList.add('remove');
-    	remove.innerHTML = "REMOVE";
-    	remove.addEventListener('click', () => this.remove(itemBox, name));
-
-    	container.appendChild(itemBox);
-
-        itemBox.appendChild(input);
-        itemBox.appendChild(edit);
-        itemBox.appendChild(remove);
-
+function addToDo(toDo,id,done,trash){
+    if(trash){ 
+        return; 
     }
+    const DONE = done?CHECK:UNCHECK;
+    const LINE = done?LINE_THROUGH:"";
+    const text= `
+    <li class="item">
+    <i class="fa ${DONE} co" job="complete" id="${id}"></i>
+    <p class="text ${LINE}">${toDo}</p>
+    <i class="fa fa-trash-o de" job="delete" id="${id}"></i> 
+</li>
+`;
+    const position="beforeend";
+    list.insertAdjacentHTML(position,text);
 
-    edit(input, name){
-        if(input.disabled == true){
-           input.disabled = !input.disabled;
+}
+
+
+document.addEventListener("keyup",function(event){
+    if(event.keyCode ==13){
+        const toDo=input.value;
+        if(toDo){
+            addToDo(toDo,id,false,false);
+            LIST.push({
+                name:toDo,
+                id:id,
+                done:false,
+                trash:false
+
+            });
+             localStorage.setItem("toDo",JSON.stringify(LIST));
+            id++;
         }
-    	else{
-            input.disabled = !input.disabled;
-            let indexof = todos.indexOf(name);
-            todos[indexof] = input.value;
-            window.localStorage.setItem("todos", JSON.stringify(todos));
-        }
+        input.value="";
     }
+});
 
-    remove(itemBox, name){
-        itemBox.parentNode.removeChild(itemBox);
-        let index = todos.indexOf(name);
-        todos.splice(index, 1);
-        window.localStorage.setItem("todos", JSON.stringify(todos));
-    }
-}
-
-add.addEventListener('click', check);
-window.addEventListener('keydown', (e) => {
-	if(e.which == 13){
-		check();
-	}
-})
-
-function check(){
-	if(inputValue.value != ""){
-		new item(inputValue.value);
-        todos.push(inputValue.value);
-        window.localStorage.setItem("todos", JSON.stringify(todos));
-		inputValue.value = "";
-	}
+function completeToDo(element){
+    element.classList.toggle(CHECK);
+    element.classList.toggle(UNCHECK);
+    element.parentNode.querySelector(".text").classList.toggle(LINE_THROUGH);
+    LIST[element.id].done=LIST[element.id].done?false:true;
 }
 
 
-for (var v = 0 ; v < todos.length ; v++){
-    new item(todos[v]);
+function removeToDo(element){
+    element.parentNode.parentNode.removeChild(element.parentNode);
+    LIST[element.id].trash=true;
+
 }
 
 
-new item("sport");
+list.addEventListener("click",function(event){
+let element =event.target;
+const elementJob= event.target.attributes.job.value;
+if(elementJob=="complete"){
+    completeToDo(element);
+}
+else if(elementJob=="delete"){
+    removeToDo(element);
+}
+ localStorage.setItem("toDo",JSON.stringify(LIST));
+
+});
+
+
+clear.addEventListener("click",function(){
+localStorage.clear();
+location.reload();
+});
+
